@@ -41,5 +41,40 @@ func CalculatePacks(sizes []int, order int) map[int]int {
 		}
 	}
 
+	qty := 0
+	sum = 0
+	delKey := 0
+	for i := len(sizes) - 1; i >= 0; i-- {
+		pack, ok := res[sizes[i]]
+		if !ok {
+			continue
+		}
+
+		qty += pack
+		sum += sizes[i] * pack
+
+		if i-1 < 0 {
+			break
+		}
+		nextSize := sizes[i-1]
+
+		withNextSize := sum / nextSize
+		prop := withNextSize * nextSize
+
+		if prop == sum && withNextSize < qty {
+			delKey = sizes[i]
+			res[nextSize] = withNextSize
+			break
+		}
+	}
+
+	if delKey > 0 {
+		for key := range res {
+			if key <= delKey {
+				delete(res, key)
+			}
+		}
+	}
+
 	return res
 }
