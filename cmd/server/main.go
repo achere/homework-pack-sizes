@@ -7,14 +7,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/achere/homework-pack-sizes/internal/server"
 )
-
-const defaultPort = 8080
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -22,18 +19,15 @@ func main() {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	port := defaultPort
-	if envPort := os.Getenv("PORT"); envPort != "" {
-		var err error
-		port, err = strconv.Atoi(envPort)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "couldn't convert port to int: %s", err)
-		}
+	app, err := server.NewApp(logger)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error initialising the applicaiton: %s", err)
+		os.Exit(1)
 	}
 
 	httpServer := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: server.NewRouter(),
+		Addr:    fmt.Sprintf(":%d", app.Config.Port),
+		Handler: app.NewRouter(),
 	}
 
 	go func() {
