@@ -114,7 +114,7 @@
                 .catch(error => {
                     resultDiv.innerHTML = `<div class="alert alert-danger">${error}</div>`;
                 })
-                .finally(() => setInteractivity(false));
+                .finally(() => setDisabledButtons(false));
             });
 
             saveSizesButton.addEventListener('click', () => {
