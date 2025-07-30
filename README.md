@@ -42,6 +42,68 @@ You can set the following environment variables using the `-e VAR=<value>` flag 
     docker run -e PORT=9090 -p 9090:9090 homework-pack-sizes
     ```
 
+## API Endpoints
+
+The server exposes the following endpoints:
+
+*   **`GET /`**
+    *   Displays the HTML UI for calculating pack sizes.
+
+*   **`POST /api/v1/calculate-packs`**
+    *   Calculates pack sizes based on the provided sizes and order quantity.
+    *   **Request Body:**
+        ```json
+        {
+          "sizes": [250, 500, 1000, 2000, 5000],
+          "order": 251
+        }
+        ```
+    *   **Response Body:**
+        ```json
+        {
+          "packs": {
+            "500": 1
+          }
+        }
+        ```
+
+*   **`POST /api/v2/calculate-packs`**
+    *   Calculates pack sizes based on the order quantity, using the pack sizes stored in the database.
+    *   **Request Body:**
+        ```json
+        {
+          "order": 251
+        }
+        ```
+    *   **Response Body:**
+        ```json
+        {
+          "packs": {
+            "500": 1
+          },
+          "sizes": [250, 500, 1000, 2000, 5000]
+        }
+        ```
+
+*   **`GET /api/v2/sizes`**
+    *   Retrieves the current pack sizes from the database.
+    *   **Response Body:**
+        ```json
+        {
+          "sizes": [250, 500, 1000, 2000, 5000]
+        }
+        ```
+
+*   **`POST /api/v2/sizes`**
+    *   Updates the pack sizes in the database.
+    *   **Request Body:**
+        ```json
+        {
+          "sizes": [250, 500, 1000, 2000, 5000]
+        }
+        ```
+    *   **Response:** `204 No Content`
+
 
 ## Running Tests
 
