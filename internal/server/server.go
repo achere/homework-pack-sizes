@@ -1,33 +1,32 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
-	"strings"
 
+	"github.com/achere/homework-pack-sizes/internal/pack"
 	"github.com/joeshaw/envdecode"
 )
 
 const (
-	defaultSizes = "250,500,1000,2000,5000"
-	defaultPort  = 8080
+	defaultPort = 8080
 )
 
 type App struct {
-	Config *Config
-	logger *slog.Logger
+	Config   *Config
+	logger   *slog.Logger
+	SizeRepo pack.PackSizeRepo
 }
 
 type Config struct {
-	Port     int    `env:"PORT"`
-	Order    string `env:"ORDER"`
-	SizesStr string `env:"SIZES"`
-	Sizes    []int
+	Port  int    `env:"PORT"`
+	Order string `env:"ORDER"`
+	DbUrl string `env:"DB_URL"`
 }
 
 // NewApp creates a new App, initialising the config from environment variables.
-func NewApp(logger *slog.Logger) (*App, error) {
+func NewApp(ctx context.Context, logger *slog.Logger) (*App, error) {
 	app := &App{}
 
 	app.logger = logger
@@ -38,23 +37,12 @@ func NewApp(logger *slog.Logger) (*App, error) {
 		return nil, fmt.Errorf("failed to load from env: %w", err)
 	}
 
+	if app.Config.DbUrl == "" {
+		return nil, fmt.Errorf("DB_URL was not set")
+	}
 	if app.Config.Port == 0 {
 		app.Config.Port = defaultPort
 	}
-	if app.Config.SizesStr == "" {
-		app.Config.SizesStr = defaultSizes
-	}
-
-	sizeStrings := strings.Split(app.Config.SizesStr, ",")
-	sizes := make([]int, len(sizeStrings))
-	for i, sizeStr := range sizeStrings {
-		size, err := strconv.Atoi(sizeStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert size to int: %s", sizeStr)
-		}
-		sizes[i] = size
-	}
-	app.Config.Sizes = sizes
 
 	return app, nil
 }

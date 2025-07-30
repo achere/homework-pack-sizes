@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/achere/homework-pack-sizes/internal/db"
 	"github.com/achere/homework-pack-sizes/internal/server"
 )
 
@@ -19,11 +20,20 @@ func main() {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	app, err := server.NewApp(logger)
+	app, err := server.NewApp(ctx, logger)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error initialising the applicaiton: %s", err)
 		os.Exit(1)
 	}
+
+	db, err := db.NewDB(ctx, app.Config.DbUrl)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error initialising the database: %s", err)
+		os.Exit(1)
+	}
+	logger.Info("Connected to the DB")
+
+	app.SizeRepo = db
 
 	httpServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", app.Config.Port),
@@ -48,6 +58,10 @@ func main() {
 		shutdownCtx := context.Background()
 		shutdownCtx, cancel := context.WithTimeout(shutdownCtx, 10*time.Second)
 		defer cancel()
+
+		go func() {
+			db.Close()
+		}()
 
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
 			fmt.Fprintf(os.Stderr, "error shutting down http server: %s\n", err)

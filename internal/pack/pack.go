@@ -1,11 +1,48 @@
 package pack
 
 import (
+	"context"
 	"fmt"
 	"slices"
 )
 
 var ErrInvalidArg = fmt.Errorf("invalid arguments received")
+
+type PackSizeRepo interface {
+	GetPackSizes(context.Context) ([]int, error)
+	StorePackSizes(context.Context, []int) error
+}
+
+// CalculatePacksWithRepo calculates the number of packs for a given order, fetching pack sizes from a repository,
+// using the same logic as the CalculatePacks(). It respects the context passed as the first parameter.
+// It returns the calculated packs, a sorted slice of available pack sizes, and any error encountered.
+func CalculatePacksWithRepo(ctx context.Context, repo PackSizeRepo, order int) (map[int]int, []int, error) {
+	sizes, err := repo.GetPackSizes(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("couldn't get pack sizes: %w", err)
+	}
+
+	packs, err := CalculatePacks(sizes, order)
+	if err != nil {
+		return nil, nil, fmt.Errorf("couldn't calculate packs: %w", err)
+	}
+
+	slices.Sort(sizes)
+
+	return packs, sizes, nil
+}
+
+// SavePackSizes saves a new set of pack sizes to the repository.
+// It ensures that all provided pack sizes are positive integers.
+func SavePackSizes(ctx context.Context, repo PackSizeRepo, sizes []int) error {
+	for _, s := range sizes {
+		if s <= 0 {
+			return fmt.Errorf("%w: size amount is not positive: %d", ErrInvalidArg, s)
+		}
+	}
+
+	return repo.StorePackSizes(ctx, sizes)
+}
 
 // CalculatePacks calculates the number of packs of different sizes to fulfill an order according to the following rules:
 // 1. Only whole packs can be sent. Packs cannot be broken open.
@@ -106,4 +143,3 @@ func CalculatePacks(sizes []int, order int) (map[int]int, error) {
 
 	return res, nil
 }
-

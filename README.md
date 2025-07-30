@@ -39,7 +39,7 @@ You can set the following environment variables using the `-e VAR=<value>` flag 
     docker run -e PORT=9090 -p 9090:9090 homework-pack-sizes
     ```
 - `ORDER`: set the default order amount. Set to 251 by default in the Dockerfile.
-- `SIZES`: accepts a comma-separated list of pack sizes. Defaults to 250, 500, 1000, 2000, 5000 in the application.
+- `DB_URL`: the connection string for the PostgreSQL database. The format is `postgres://user:password@hostname:port/database_name`.
 
 
 ## Running Tests
