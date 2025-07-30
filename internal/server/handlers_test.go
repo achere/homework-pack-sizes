@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -171,6 +172,7 @@ func TestUIHandler_Success(t *testing.T) {
 			return []int{250, 500, 1000, 2000, 5000}, nil
 		},
 	}
+	app.template, _ = template.ParseFS(content, "templates/index.html")
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rr := httptest.NewRecorder()

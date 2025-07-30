@@ -2,17 +2,12 @@ package server
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
 	"errors"
-	"html/template"
 	"net/http"
 
 	"github.com/achere/homework-pack-sizes/internal/pack"
 )
-
-//go:embed templates
-var content embed.FS
 
 type calculatePacksRequestV1 struct {
 	Sizes []int `json:"sizes"`
@@ -152,12 +147,6 @@ func (a *App) retrievePackSizesHandler(w http.ResponseWriter, r *http.Request) {
 
 // uiHandler handles displating HTML UI
 func (a *App) uiHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFS(content, "templates/index.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	sizes, err := a.SizeRepo.GetPackSizes(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -172,7 +161,7 @@ func (a *App) uiHandler(w http.ResponseWriter, r *http.Request) {
 		Sizes: sizes,
 	}
 
-	if err := tmpl.Execute(w, data); err != nil {
+	if err := a.template.Execute(w, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
