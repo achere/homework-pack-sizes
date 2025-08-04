@@ -3,6 +3,7 @@ package pack
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 )
 
@@ -11,6 +12,13 @@ var ErrInvalidArg = fmt.Errorf("invalid arguments received")
 type PackSizeRepo interface {
 	GetPackSizes(context.Context) ([]int, error)
 	StorePackSizes(context.Context, []int) error
+}
+
+type packSolution struct {
+	packs      map[int]int
+	totalItems int
+	totalPacks int
+	isValid    bool
 }
 
 // CalculatePacksWithRepo calculates the number of packs for a given order, fetching pack sizes from a repository,
@@ -67,10 +75,92 @@ func CalculatePacks(sizes []int, order int) (map[int]int, error) {
 		}
 	}
 
-	res := make(map[int]int)
 	slices.SortFunc(sizes, func(a, b int) int {
 		return b - a
 	})
+
+	res, valid := calculatePacksDp(sizes, order)
+
+	if valid {
+		return res, nil
+	}
+
+	// If cannot find optimal solution, return the greedy solution
+	return calculatePacksGreedy(sizes, order), nil
+}
+
+// calculatePacksDp uses dynamic programming to calculate optimal pack sizes
+// Expects sizes to be in descending order
+func calculatePacksDp(sizes []int, order int) (map[int]int, bool) {
+	// Calculate best solution for each order amount from 1 till max allowing overflow by largest size
+	// dp[i] represents the best solution for i items
+	maxItems := order + sizes[len(sizes)-1]
+	dp := make([]packSolution, maxItems+1)
+
+	// Initialize: 0 items requires 0 packs (valid base case)
+	dp[0] = packSolution{
+		packs:      make(map[int]int),
+		totalItems: 0,
+		totalPacks: 0,
+		isValid:    true,
+	}
+
+	for items := 1; items <= maxItems; items++ {
+		dp[items] = packSolution{isValid: false}
+
+		for _, packSize := range sizes {
+			// If a valid solution that accomodates current packSize exists,
+			// use it as current solution and increment packs and count packs of current of size
+			if packSize <= items && dp[items-packSize].isValid {
+				packs := make(map[int]int)
+				maps.Copy(packs, dp[items-packSize].packs)
+				packs[packSize]++
+
+				newSolution := packSolution{
+					packs:      packs,
+					totalItems: items,
+					totalPacks: dp[items-packSize].totalPacks + 1,
+					isValid:    true,
+				}
+
+				// If current solution is better than existing, update to current
+				if !dp[items].isValid || isBetterSolution(newSolution, dp[items]) {
+					dp[items] = newSolution
+				}
+			}
+		}
+	}
+
+	// Find the best solution that satisfies the order (>= order items)
+	var bestSolution packSolution
+	bestSolution.isValid = false
+
+	for items := order; items <= maxItems; items++ {
+		if !dp[items].isValid {
+			continue
+		}
+
+		if !bestSolution.isValid || isBetterSolution(dp[items], bestSolution) {
+			bestSolution = dp[items]
+			break
+		}
+	}
+
+	return bestSolution.packs, bestSolution.isValid
+}
+
+// isBetterSolution determines if solution A is better than solution B
+func isBetterSolution(a, b packSolution) bool {
+	if a.totalItems != b.totalItems {
+		return a.totalItems < b.totalItems
+	}
+	return a.totalPacks < b.totalPacks
+}
+
+// calculatePacksGreedy implemets a greedy strategy for calculating packs while handling some edge cases.
+// Expects sizes to be sorted in descending order
+func calculatePacksGreedy(sizes []int, order int) map[int]int {
+	res := make(map[int]int)
 
 	// Naive packing
 	sizeIdx := 0
@@ -105,7 +195,7 @@ func CalculatePacks(sizes []int, order int) (map[int]int, error) {
 		}
 	}
 
-	// Optimize package quantity
+	// Optimize package quantity with bigger sizes
 	qty := 0
 	sum = 0
 	delKey := 0
@@ -141,5 +231,5 @@ func CalculatePacks(sizes []int, order int) (map[int]int, error) {
 		}
 	}
 
-	return res, nil
+	return res
 }
