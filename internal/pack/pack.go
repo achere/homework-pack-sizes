@@ -110,7 +110,7 @@ func calculatePacksDp(sizes []int, order int) (map[int]int, bool) {
 
 		for _, packSize := range sizes {
 			// If a valid solution that accomodates current packSize exists,
-			// use it as current solution and increment packs and count packs of current of size
+			// use it as current solution and increment packs and count of packs of current size
 			if packSize <= items && dp[items-packSize].isValid {
 				packs := make(map[int]int)
 				maps.Copy(packs, dp[items-packSize].packs)
